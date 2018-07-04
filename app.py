@@ -1,132 +1,127 @@
-# Dependencies
+import os
+
+import pandas as pd
+import numpy as np
+
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, func, desc
-from flask import Flask, jsonify, render_template, request
-import csv
+from sqlalchemy import create_engine
 
-# Create App
+from flask import Flask, jsonify, render_template
 app = Flask(__name__)
 
-# Connect to sqlite database
-engine = create_engine("sqlite:///belly_button_biodiversity.sqlite")
+
+#################################################
+# Database Setup
+#################################################
+dbfile = os.path.join('db', 'belly_button_biodiversity.sqlite')
+engine = create_engine(f"sqlite:///{dbfile}")
+
+# reflect an existing database into a new model
 Base = automap_base()
+# reflect the tables
 Base.prepare(engine, reflect=True)
+
+# Save references to each table
+Samples_Metadata = Base.classes.samples_metadata
+OTU = Base.classes.otu
+Samples = Base.classes.samples
+
+# Create our session (link) from Python to the DB
 session = Session(engine)
 
-# Storing tables
-Otu = Base.classes.otu
-Samples = Base.classes.samples
-Samples_Metadata = Base.classes.samples_metadata
 
-# Returns the dashboard homepage
 @app.route("/")
-def home():
-    return render_template("index.html")
+def index():
+    """Return the homepage."""
+    return render_template('index.html')
 
-# Returns a list of sample names in list format
-@app.route("/names")
+
+@app.route('/names')
 def names():
+    """Return a list of sample names."""
 
-    # Empty list for sample ids
-    sample_ids = []
-    
-    # Grab metadata table
-    results = session.query(Samples_Metadata.SAMPLEID)
+    # Use Pandas to perform the sql query
+    stmt = session.query(Samples).statement
+    df = pd.read_sql_query(stmt, session.bind)
+    df.set_index('otu_id', inplace=True)
 
-    # Loop through query & grab ids
-    for result in results:
-        sample_ids.append("BB_" + str(result[0]))
+    # Return a list of the column names (sample names)
+    return jsonify(list(df.columns))
 
-    return jsonify(sample_ids)
 
-# Returns a list of OTU descriptions
-@app.route("/otu")
+@app.route('/otu')
 def otu():
+    """Return a list of OTU descriptions."""
+    results = session.query(OTU.lowest_taxonomic_unit_found).all()
 
-    # Empty list for descriptions
-    otu_desc = []
-    
-    # Grab otu table
-    results = session.query(Otu.lowest_taxonomic_unit_found)
+    # Use numpy ravel to extract list of tuples into a list of OTU descriptions
+    otu_list = list(np.ravel(results))
+    return jsonify(otu_list)
 
-    # Loop through query & grab descriptions
-    for result in results:
-        otu_desc.append(result[0])
 
-    return jsonify(otu_desc)
+@app.route('/metadata/<sample>')
+def sample_metadata(sample):
+    """Return the MetaData for a given sample."""
+    sel = [Samples_Metadata.SAMPLEID, Samples_Metadata.ETHNICITY,
+           Samples_Metadata.GENDER, Samples_Metadata.AGE,
+           Samples_Metadata.LOCATION, Samples_Metadata.BBTYPE]
 
-# Returns a json dictionary of sample metadata
-@app.route("/metadata/<sample>")
-def metadata(sample):
-    
-    # Grab input
-    sample_id = int(sample.split("_")[1])
+    # sample[3:] strips the `BB_` prefix from the sample name to match
+    # the numeric value of `SAMPLEID` from the database
+    results = session.query(*sel).\
+        filter(Samples_Metadata.SAMPLEID == sample[3:]).all()
 
-    # Empty dictionary for data
+    # Create a dictionary entry for each row of metadata information
     sample_metadata = {}
-
-    # Grab metadata table
-    samples = session.query(Samples_Metadata)
-
-    # Loop through query & grab info
-    for info in samples:
-        if (sample_id == info.SAMPLEID):
-            sample_metadata["AGE"] = info.AGE
-            sample_metadata["BBTYPE"] = info.BBTYPE
-            sample_metadata["ETHNICITY"] = info.ETHNICITY
-            sample_metadata["GENDER"] = info.GENDER
-            sample_metadata["LOCATION"] = info.LOCATION
-            sample_metadata["SAMPLEID"] = info.SAMPLEID
+    for result in results:
+        sample_metadata['SAMPLEID'] = result[0]
+        sample_metadata['ETHNICITY'] = result[1]
+        sample_metadata['GENDER'] = result[2]
+        sample_metadata['AGE'] = result[3]
+        sample_metadata['LOCATION'] = result[4]
+        sample_metadata['BBTYPE'] = result[5]
 
     return jsonify(sample_metadata)
 
-# Returns an integer value for the weekly washing frequency
-@app.route("/wfreq/<sample>")
-def wfreq(sample):
 
-    # Grab input
-    sample_id = int(sample.split("_")[1])
+@app.route('/wfreq/<sample>')
+def sample_wfreq(sample):
+    """Return the Weekly Washing Frequency as a number."""
 
-    # Grab metadata table
-    results = session.query(Samples_Metadata)
+    # `sample[3:]` strips the `BB_` prefix
+    results = session.query(Samples_Metadata.WFREQ).\
+        filter(Samples_Metadata.SAMPLEID == sample[3:]).all()
+    wfreq = np.ravel(results)
 
-    # Loop through and grab wfreq
-    for result in results:
-        if (sample_id == result.SAMPLEID):
-            wfreq = result.WFREQ
+    # Return only the first integer value for washing frequency
+    return jsonify(int(wfreq[0]))
 
-    return jsonify(wfreq)
 
-# Returns a list of dictionaries containing sorted lists for 'otu_ids' and 'sample_values'
-@app.route("/samples/<sample>")
+@app.route('/samples/<sample>')
 def samples(sample):
+    """Return a list dictionaries containing `otu_ids` and `sample_values`."""
+    stmt = session.query(Samples).statement
+    df = pd.read_sql_query(stmt, session.bind)
 
-    # Create sample query
-    sample_query = "Samples." + sample
+    # Make sure that the sample was found in the columns, else throw an error
+    if sample not in df.columns:
+        return jsonify(f"Error! Sample: {sample} Not Found!"), 400
 
-    # Create empty dictionary & lists
-    samples_info = {}
-    otu_ids = []
-    sample_values = []
+    # Return any sample values greater than 1
+    df = df[df[sample] > 1]
 
-    # Grab info
-    results = session.query(Samples.otu_id, sample_query).order_by(desc(sample_query))
+    # Sort the results by sample in descending order
+    df = df.sort_values(by=sample, ascending=0)
 
-    # Loop through & append
-    for result in results:
-        otu_ids.append(result[0])
-        sample_values.append(result[1])
+    # Format the data to send as json
+    data = [{
+        "otu_ids": df[sample].index.values.tolist(),
+        "sample_values": df[sample].values.tolist()
+    }]
+    return jsonify(data)
 
-    # Add to dictionary
-    samples_info = {
-        "otu_ids": otu_ids,
-        "sample_values": sample_values
-    }
-
-    return jsonify(samples_info)
-    
 
 if __name__ == "__main__":
     app.run(debug=True)
