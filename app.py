@@ -1,127 +1,131 @@
-import os
-
+# import libraries
+from flask import Flask,render_template,jsonify
 import pandas as pd
-import numpy as np
 
-import sqlalchemy
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
 
-from flask import Flask, jsonify, render_template
+# create instance of Flask app
 app = Flask(__name__)
 
-
-#################################################
-# Database Setup
-#################################################
-dbfile = os.path.join('db', 'belly_button_biodiversity.sqlite')
-engine = create_engine(f"sqlite:///{dbfile}")
-
-# reflect an existing database into a new model
-Base = automap_base()
-# reflect the tables
-Base.prepare(engine, reflect=True)
-
-# Save references to each table
-Samples_Metadata = Base.classes.samples_metadata
-OTU = Base.classes.otu
-Samples = Base.classes.samples
-
-# Create our session (link) from Python to the DB
-session = Session(engine)
-
-
+# route for homeapge --------------------------------------------------------------------------------------------------
 @app.route("/")
-def index():
-    """Return the homepage."""
-    return render_template('index.html')
+def homepage():
+    
+    #introduction for jumbotron
+    title = "Belly Button Biodiversity"
+    paragraph2="*******************************************************************************"
+    paragraph3 ="The mission of this project was to investigate the microbes inhabiting our navels."
+    paragraph4 = "Below is an interactive dashboard displaying some the results."
+    paragraph = paragraph2 + "\n " +paragraph3 +" " + paragraph4
 
 
-@app.route('/names')
-def names():
-    """Return a list of sample names."""
-
-    # Use Pandas to perform the sql query
-    stmt = session.query(Samples).statement
-    df = pd.read_sql_query(stmt, session.bind)
-    df.set_index('otu_id', inplace=True)
-
-    # Return a list of the column names (sample names)
-    return jsonify(list(df.columns))
+    return  render_template("index.html", title=title,paragraph= paragraph )
 
 
-@app.route('/otu')
-def otu():
-    """Return a list of OTU descriptions."""
-    results = session.query(OTU.lowest_taxonomic_unit_found).all()
+# route for namepage --------------------------------------------------------------------------------------------------
+@app.route("/names")
+def funcsampleName():
+    
+    # upload dataframe
+    df_names= pd.read_csv('DataSets/belly_button_biodiversity_samples.csv')
 
-    # Use numpy ravel to extract list of tuples into a list of OTU descriptions
-    otu_list = list(np.ravel(results))
-    return jsonify(otu_list)
-
-
-@app.route('/metadata/<sample>')
-def sample_metadata(sample):
-    """Return the MetaData for a given sample."""
-    sel = [Samples_Metadata.SAMPLEID, Samples_Metadata.ETHNICITY,
-           Samples_Metadata.GENDER, Samples_Metadata.AGE,
-           Samples_Metadata.LOCATION, Samples_Metadata.BBTYPE]
-
-    # sample[3:] strips the `BB_` prefix from the sample name to match
-    # the numeric value of `SAMPLEID` from the database
-    results = session.query(*sel).\
-        filter(Samples_Metadata.SAMPLEID == sample[3:]).all()
-
-    # Create a dictionary entry for each row of metadata information
-    sample_metadata = {}
-    for result in results:
-        sample_metadata['SAMPLEID'] = result[0]
-        sample_metadata['ETHNICITY'] = result[1]
-        sample_metadata['GENDER'] = result[2]
-        sample_metadata['AGE'] = result[3]
-        sample_metadata['LOCATION'] = result[4]
-        sample_metadata['BBTYPE'] = result[5]
-
-    return jsonify(sample_metadata)
+    # created a list for sample id's
+    nameList = []
+    for each_name in df_names.columns[1:]:
+        nameList.append(each_name)
+   
+    nameList = nameList
+    return jsonify(nameList)
 
 
-@app.route('/wfreq/<sample>')
-def sample_wfreq(sample):
-    """Return the Weekly Washing Frequency as a number."""
-
-    # `sample[3:]` strips the `BB_` prefix
-    results = session.query(Samples_Metadata.WFREQ).\
-        filter(Samples_Metadata.SAMPLEID == sample[3:]).all()
-    wfreq = np.ravel(results)
-
-    # Return only the first integer value for washing frequency
-    return jsonify(int(wfreq[0]))
+    
+    return render_template("index.html" ,nameList = jsonify(nameList))
 
 
-@app.route('/samples/<sample>')
-def samples(sample):
-    """Return a list dictionaries containing `otu_ids` and `sample_values`."""
-    stmt = session.query(Samples).statement
-    df = pd.read_sql_query(stmt, session.bind)
+# route for otu --------------------------------------------------------------------------------------------------
+@app.route("/otu")
+def funcOtuDesc():
 
-    # Make sure that the sample was found in the columns, else throw an error
-    if sample not in df.columns:
-        return jsonify(f"Error! Sample: {sample} Not Found!"), 400
+    # upload dataframe
+    df_otuDesc = pd.read_csv("DataSets/belly_button_biodiversity_otu_id.csv")
 
-    # Return any sample values greater than 1
-    df = df[df[sample] > 1]
+    # created a list for the taxonomic units found
+    otuDescList = []
+    for each_otuDesc in df_otuDesc['lowest_taxonomic_unit_found']:
+        otuDescList.append(each_otuDesc)
+        
+    return jsonify(otuDescList)
 
-    # Sort the results by sample in descending order
-    df = df.sort_values(by=sample, ascending=0)
 
-    # Format the data to send as json
-    data = [{
-        "otu_ids": df[sample].index.values.tolist(),
-        "sample_values": df[sample].values.tolist()
-    }]
-    return jsonify(data)
+    return render_template("index.html", otu_nameList =  jsonify(otuDescList))
+
+
+# route for meta/sample --------------------------------------------------------------------------------------------------
+@app.route("/meta/sample")
+def funcSampleMetaData():
+    # upload dataframe
+    df_sampleMetaData = pd.read_csv("DataSets/Belly_Button_Biodiversity_Metadata.csv")
+
+    #added BB_ to the column sampleid
+    df_sampleMetaData["SAMPLEID"]="BB_" + df_sampleMetaData["SAMPLEID"].astype(str)
+
+    # selected need columns 
+    df_sampleMetaData = df_sampleMetaData[['AGE','BBTYPE','ETHNICITY','GENDER','LOCATION','SAMPLEID']]
+
+    # change df to json although python will return this as a string
+    df_sampleMetaData_JSON = df_sampleMetaData.to_json(orient='records')
+    
+    return df_sampleMetaData_JSON
+
+
+    return render_template('index.html', metaSampleProfile = jsonify(df_sampleMetaData_JSON))
+
+
+## route for weekly frequency --------------------------------------------------------------------------------------------------
+@app.route("/wfreq/sample")
+def funcSampleMetaDataWFREQ():
+    # upload dataframe
+    df_sampleMetaData = pd.read_csv("DataSets/Belly_Button_Biodiversity_Metadata.csv")
+    
+    #added BB_ to the column sampleid
+    df_sampleMetaData['SAMPLEID'] = "BB_" + df_sampleMetaData["SAMPLEID"].astype(str)
+    
+    # selected needed columns
+    df_sampleMetaDataWFREQ = df_sampleMetaData[['SAMPLEID','WFREQ']]
+    
+    #filled na values with 0
+    df_sampleMetaDataWFREQ = df_sampleMetaDataWFREQ.fillna(0) 
+    
+    #changed weekly frequency dataframe to json although python will return this as a string
+    df_sampleMetaDataWFREQ = df_sampleMetaDataWFREQ.to_json(orient='records')
+    
+    
+    return df_sampleMetaDataWFREQ
+
+
+    return render_template('index.html', metaSampleNamesWFREQ = jsonify(df_sampleMetaDataWFREQ))
+
+## route for pie and bubble plot --------------------------------------------------------------------------------------------------
+@app.route("/sample/plot/pie") 
+def funcDictSortedSampleValues():
+    # upload dataframe
+    df_Biodiversity = pd.read_csv('DataSets/belly_button_biodiversity_samples.csv')
+    df_otu = pd.read_csv("DataSets/belly_button_biodiversity_otu_id.csv")
+    # merge dataframe
+    df_Biodiversity_merge = df_Biodiversity.merge(df_otu, on=['otu_id'],how='outer')
+    # sum columns
+    df_Biodiversity_merge["Total"] = df_Biodiversity_merge.iloc[::,1:].sum(axis=1)
+    df_Biodiversity_sorted=df_Biodiversity_merge[['otu_id','lowest_taxonomic_unit_found', 'Total']]
+    # sort and display top five
+    df_Biodiversity_sorted = df_Biodiversity_sorted.sort_values(by=['Total'],ascending=False).head(10)
+    return df_Biodiversity_sorted.to_json(orient='records')
+    
+    samplePIECHART = funcDictSortedSampleValues()
+
+
+    return render_template("index.html", samplePIE = jsonify(samplePIECHART))
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
