@@ -4,13 +4,14 @@ body {
 
 .jumbotron {
     text-align: center;
-    background-color: aliceblue;
+    background-color: #00ffff;
     min-height: 400px;
 }
 
 h1 {
     font-size: 50px;
     font-weight: bold;
+    color: blue;
 }
 
 .panel-heading {
