@@ -11,7 +11,7 @@ app = Flask(__name__)
 def homepage():
     
     #introduction for jumbotron
-    title = "Belly Button Biodiversity"
+    title = "Belly Button Bio-diversity"
     paragraph2="*******************************************************************************"
     paragraph3 ="The mission of this project was to investigate the microbes inhabiting our navels."
     paragraph4 = "Below is an interactive dashboard displaying some the results."
