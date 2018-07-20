@@ -5,295 +5,110 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Belly Buttom BioDiversity</title>
+    <title>Belly Button Biodiversity</title>
 
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+    <!-- google fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Just+Me+Again+Down+Here" rel="stylesheet">
+
+
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
 
-    <!-- jQuery library -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+        crossorigin="anonymous">
 
-    <!-- Latest compiled JavaScript -->
-
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-    <style>
-        body {
-            background-color: #00ffff;
-        }
-    </style>
 </head>
 
 <body>
-    <div class="container text-center">
-        <div class="jumbotron">
-            
-            <h1 style="font-family:'Courier New', Courier, monospace;"><font color="blue">{{title}}</font></h1>
-            <p style="font-family:'Courier New', Courier, monospace;"><font color="blue">{{paragraph}}</font></p>
-            <p style="font-family:'Courier New', Courier, monospace;"><font color="blue">{{paragraph4}}</font></p>
+
+
+    <div class="container" style="text-align:center; margin-top:50px">
+        <div class="jumbotron" style="background:#00ffff;">
+            <h1><font color="blue";>Belly Button Biodiversity Dashboard</font></h1>
+            <p style="padding-top:10px;margin-bottom:0px">The creation of this interactive dasbhoard was inspired by a
+                <a href="http://robdunnlab.com/projects/belly-button-biodiversity/" style="font-weight:bold;">study</a> conducted in January 2011 to invesigate the microbes inhabiting our navels and the factors that
+                might influence the microscopic life calling this protected, moist patch of skin home.
+            </p>
         </div>
+    </div>
+
+    <div class="container">
         <div class="row">
-            <div class="col-md-4">
-                <div style="background-color:aliceblue;">
-                    <label for="" style="font-family: fantasy;">Select Sample ID</label>
-                    <br>
-                    <select id="nameSelection" onchange="optionChanged(this)">
-                    </select>
-                    <div style="height:20px"></div>
+            <div class="col-md-3">
+                <!-- Small button group -->
+                <h3><strong>Select sample:</strong></h3>
+                <div id="sampleList">
                 </div>
-                <div class="col-md-12" style=" margin-top: 10px; background-color:aliceblue;">
-                    <h4 style="font-family: fantasy;">Meta DATA</h4>
-                    <hr>
-                    <p id="age" style="font-family: fantasy;"></p>
-                    <p id="BBTYPE" style="font-family: fantasy;"></p>
-                    <p id="ethinic" style="font-family: fantasy;"></p>
-                    <p id="gender" style="font-family: fantasy;"></p>
-                    <p id="location" style="font-family: fantasy;"></p>
-                    <p id="sampleid" style="font-family: fantasy;"></p>
-                    <div style="height:20px"></div>
+
+                <div class="panel panel-default" style="margin-top:20px">
+                    <div class="panel-heading" style="background:#00ffff;text-align:center">
+                        <h3 class="panel-title">Sample MetaData</h3>
+                    </div>
+                    <div class="panel-body">
+
+                        <table class="table table-bordered">
+
+                            <tbody>
+                            </tbody>
+
+                        </table>
+
+                    </div>
                 </div>
+
             </div>
-            <div class="col-md-6" style="background-color:aliceblue;margin-left:50px;" > 
-                <h3 style="font-family: fantasy;">Most Common Bacterica Found by OTU ID</h3>
-                <hr>
-                <div id="pieChart"></div>
-                <div style="height:20px"></div>
-            
+
+            <div class="col-md-5">
+                <h3><strong>Distribution of Microbes by Sample ID (Top 10)</strong></h3>
+                <div id="plotPie"></div>
+
+                <p style="font-size:0.75em">Lables are the Lowest taxonomic level of bacteria and archaea identified (‘phylotype’ or OTU, operational
+                    taxonomic unit) in the samples. Taxonomies reflect the lowest taxonomic level to which samples could
+                    be given a name. If samples were so different from existing samples as to not readily be classified they
+                    are simply labeled "bacteria" reflecting that they were different from everything we know. Taxonomies
+                    presented follow the taxonomic rank you learned about in Intro Biology: Kingdom (or Domain in the case
+                    of Archaea); Phylum; Subphylum; Order; Family; Genus. See Hulcr et al. 2012 for specific methods. Values
+                    indicate sequencing read numbers. </p>
+            </div>
+
+            <div class="col-md-4">
+                <h3><strong>Washing Frequency (belly button scrubs per week)</strong></h3>
+                <div id="plotGauge"></div>
             </div>
         </div>
 
         <hr>
 
-        <div class="rows">
-
-        <div class="col-md-5" style="margin-top:58px; padding-right:75px;"  >
-                <div id="bubble"></div>
-
+        <div class="row">
+            <div class="col-md-12">
+                <div class="col-md-12">
+                        <h3><strong>Relationship beween OTU ID and Sample Values</strong></h3>
+                    <div id="plotBubble"></div>
+                </div>
             </div>
-
-            <div class="col-md-5" >
-                <h4 id="WWFG" style="font-family:fantasy; padding-left:200px; color:white;">
-                    <u>Weekly Washing Frequency Gauge</u>
-                </h4>
-                <div id="lol" style="margin-bottom:0"></div>
-            </div>
-
         </div>
+
     </div>
 
-    <div style="height:30px;"></div>
-    <script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
-    <script>
-        // create drop down
-        d3.json("/names", function (nameList) {
-            for (name of nameList) {
-                var option = document.createElement("option");
-                option.text = name;
-                option.value = name;
-                var select = document.getElementById("nameSelection");
-                select.appendChild(option);
-            }
-        });
-        // on change meta data and wash frequecy gauge plot will be generated
-        function optionChanged(data) {
-            var x = data.value
-            d3.json("/meta/sample", function (metaSampleProfile) {
-                metaSampleProfile.forEach(element => {
-                    var sampleid = element.SAMPLEID;
-                    if (sampleid === x) {
 
-                        document.getElementById("age").innerHTML = "AGE:" + " " + element.AGE
-                        document.getElementById("BBTYPE").innerHTML = "BBTYPE:" + " " + element.BBTYPE
-                        document.getElementById("ethinic").innerHTML = "ETHNICITY:" + " " + element.ETHNICITY
-                        document.getElementById("gender").innerHTML = "GENDER:" + " " + element.GENDER
-                        document.getElementById("location").innerHTML = "LOCATION:" + " " + element.LOCATION
-                        document.getElementById("sampleid").innerHTML = "SAMPLEID:" + " " + element.SAMPLEID
-                    }
-                });
-                // Gauge Plot
-                d3.json("/wfreq/sample", function (washfreq) {
-                    var xFrequency = data.value
-                    washfreq.forEach(freq => {
-                        var washSampleID = freq.SAMPLEID;
-                        if (washSampleID === xFrequency) {
-                            var graphNumber = freq.WFREQ;
-                            console.log(graphNumber)
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 
-                            document.getElementById("WWFG").innerHTML = washSampleID + " " +
-                                " Weekly Wash Frequency"
+    <!-- plotly.js cdn -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
-                            // Gauge Plot
-                            // _________________________________________________________________________
+    <script src="{{url_for('static',filename='js/app.js')}}"></script>
 
-                            // Enter a speed between 0 and 180
-                            var level = graphNumber * 20;
-
-                            // Trig to calc meter point
-                            var degrees = 180 - level,
-                                radius = .5;
-                            var radians = degrees * Math.PI / 180;
-                            var x = radius * Math.cos(radians);
-                            var y = radius * Math.sin(radians);
-
-                            // Path: may have to change to create a better triangle
-                            var mainPath = 'M -.0 -0.025 L .0 0.025 L ',
-                                pathX = String(x),
-                                space = ' ',
-                                pathY = String(y),
-                                pathEnd = ' Z';
-                            var path = mainPath.concat(pathX, space, pathY, pathEnd);
-
-                            var data = [{
-                                    type: 'scatter',
-                                    x: [0],
-                                    y: [0],
-                                    marker: {
-                                        size: 28,
-                                        color: '850000'
-                                    },
-                                    showlegend: false,
-                                    name: 'speed',
-                                    text: level,
-                                    hoverinfo: 'text+name'
-                                },
-                                {
-                                    values: [50 / 6, 50 / 6, 50 / 6, 50 / 6, 50 / 6, 50 / 6,
-                                        50
-                                    ],
-                                    rotation: 90,
-                                    text: ['8-9', '6-7', '4-5', '3-4',
-                                        '1-2', '0-1', ''
-                                    ],
-                                    textinfo: 'text',
-                                    textposition: 'inside',
-                                    marker: {
-                                        colors: ['rgba(14, 127, 0, .5)',
-                                            'rgba(110, 154, 22, .5)',
-                                            'rgba(170, 202, 42, .5)',
-                                            'rgba(202, 209, 95, .5)',
-                                            'rgba(210, 206, 145, .5)',
-                                            'rgba(232, 226, 202, .5)',
-                                            'rgba(255, 255, 255, 0)'
-                                        ]
-                                    },
-                                    labels: ['Between 8 and 9 times per week',
-                                        'Between 6 and 7 times per week',
-                                        'Between 4 and 5 times per week',
-                                        'Between 2 and 3 times per week',
-                                        'Between 1 and 2 times per week',
-                                        'Between 0 and 1 times per week', ''
-                                    ],
-                                    hoverinfo: 'label',
-                                    hole: .5,
-                                    type: 'pie',
-                                    showlegend: false
-                                }
-                            ];
-
-                            var layout = {
-                                shapes: [{
-                                    type: 'path',
-                                    path: path,
-                                    fillcolor: '850000',
-                                    line: {
-                                        color: '850000'
-                                    }
-                                }],
-                                title: "Scrubs Per Week",
-                                Speed: "0-100",
-                                height: 330,
-                                width: 650,
-                                xaxis: {
-                                    zeroline: false,
-                                    showticklabels: false,
-                                    showgrid: false,
-                                    range: [-1, 1]
-                                },
-                                yaxis: {
-                                    zeroline: false,
-                                    showticklabels: false,
-                                    showgrid: false,
-                                    range: [-1, 1]
-                                }
-                            };
-
-                            Plotly.newPlot("lol", data, layout);
-
-                            // _________________________________________________________________________
-                        }
-
-                    })
-
-                })
-                // close for wfreq/sample
-            });
-        }
-        // generate pie plot and bubble chart
-        d3.json("/sample/plot/pie", function (sampleFORCHART) {
-            otu_id_LIST = []
-            taxonomic_LIST = []
-            total_LIST = []
-
-            sampleFORCHART.forEach(function (entry) {
-                otu_id_LIST.push(entry.otu_id)
-                taxonomic_LIST.push(entry.lowest_taxonomic_unit_found)
-                total_LIST.push(entry.Total)
-            })
+    <!-- CSS stylesheet -->
+    <link rel="stylesheet" href="{{url_for('static',filename='css/style.css')}}">
 
 
-            var dataPIE = [{
-                values: total_LIST,
-                labels: otu_id_LIST,
-                type: 'pie'
-            }];
-
-            var layoutPIE = {
-                height: 300,
-                width: 475
-            };
-
-            Plotly.newPlot("pieChart", dataPIE, layoutPIE);
-
-
-            // bubble plot
-            var trace1 = {
-                x: otu_id_LIST,
-                y: total_LIST,
-                mode: 'markers',
-                marker: {
-                    color: ['rgb(0, 164, 0)', 'rgb(255, 144, 14)', 'rgb(44, 160, 20)',
-                        'rgb(0, 0, 54)', 'rgb(0, 76, 54)', 'rgb(100, 76, 54)', 'rgb(200, 76, 0)',
-                        'rgb(100, 100, 300)', 'rgb(79, 0, 54)', 'rgb(9, 588, 54)'
-                    ],
-
-                    labels: taxonomic_LIST,
-                    opacity: [1, 0.8, 0.6, 0.4],
-                    size: [100, 75, 60, 50, 40, 30, 20, 15, 5]
-                }
-            };
-
-            var data = [trace1];
-
-            var layout = {
-                title: 'Most Common Bacterica Found by OTU ID',
-                showlegend: false,
-                xaxis: {
-                    range: [400, 3000],
-                    title: "OTU Description ID"
-                },
-                yaxis: {
-                    range: [0, 20500],
-                    title: "Total Bacterica Found"
-                },
-                height: 350,
-                width: 450
-            };
-            Plotly.newPlot('bubble', data, layout);
-        });
-    </script>
 </body>
 
 </html>
