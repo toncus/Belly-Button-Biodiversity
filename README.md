@@ -1,4 +1,5 @@
-# Belly Button Biodiversity
+# Belly Button Biodiversity 
+Deployed on Heroku at : https://bbbdiv.herokuapp.com/
 
 ![Bacteria by filterforge.com](Images/bacteria_by_filterforgedotcom.jpg)
 
